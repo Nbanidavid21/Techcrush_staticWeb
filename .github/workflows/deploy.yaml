@@ -1,32 +1,31 @@
-name: CI/CD Website Deployment
+name: Deploy Static Webpage to AWS EC2
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main  # Triggers the pipeline on push to the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Copy files to EC2
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "./*"
-        target: "/var/www/html"
-        overwrite: true   # ensures files are replaced
+      - name: Set up SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.HOST_DNS }} >> ~/.ssh/known_hosts
 
-    - name: Restart Nginx
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          sudo systemctl restart nginx
+      - name: Deploy Files to EC2
+        run: |
+          # Syncs the local repository files to the web server directory
+          rsync -avz -e "ssh -i ~/.ssh/id_ed25519" ./ ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }}:/var/www/html/
+
+      - name: Restart Web Server (Optional)
+        run: |
+          # Ensures the latest changes are picked up by the service
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }} "sudo systemctl restart nginx"

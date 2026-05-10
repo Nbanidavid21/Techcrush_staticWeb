@@ -1,9 +1,13 @@
+<<<<<<< HEAD
 name: CI/CD Website Deployment
+=======
+name: Deploy Static Webpage to AWS EC2
+>>>>>>> a4854505ef7200c332e5fabd98880129fc9bfdee
 
 on:
   push:
     branches:
-      - main
+      - main  # Triggers the pipeline on push to the main branch
 
 jobs:
   build-and-deploy:
